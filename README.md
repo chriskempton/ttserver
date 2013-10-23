@@ -4,6 +4,8 @@ Requires...
 
 JDK 7+
 
+[Google AppEngine](http://appengine.google.com) 1.8.6
+
 [Apache Maven](http://maven.apache.org) 3.1
 
 [Google Cloud Messaging](http://developer.android.com/reference/com/google/android/gcm/package-summary.html) jar (gcm-server.jar) to be installed in your local Maven repository using this command:
