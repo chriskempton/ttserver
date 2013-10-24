@@ -14,8 +14,6 @@ public class Message {
 	Long id;
 	String message;
 	
-	private Message() {}
-	
 	public Message(String message) {
 		this.message = message;
 	}

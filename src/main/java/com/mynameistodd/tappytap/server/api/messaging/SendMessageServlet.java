@@ -8,6 +8,7 @@ import com.google.android.gcm.server.Sender;
 import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.Device;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -133,7 +134,9 @@ public class SendMessageServlet extends BaseServlet {
       String error = result.getErrorCodeName();
       if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
         // application has been removed from device - unregister it
-        DatastoreHelper.unregister(regId);
+    	Device theDevice = new Device();
+    	theDevice.setDeviceId(regId);
+    	theDevice.remove();
       } else {
         logger.severe("Error sending message to device " + regId
             + ": " + error);
@@ -177,7 +180,9 @@ public class SendMessageServlet extends BaseServlet {
           logger.warning("Got error (" + error + ") for regId " + regId);
           if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
             // application has been removed from device - unregister it
-            DatastoreHelper.unregister(regId);
+            Device theDevice = new Device();
+            theDevice.setDeviceId(regId);
+            theDevice.remove();
           }
           if (error.equals(Constants.ERROR_UNAVAILABLE)) {
             retriableRegIds.add(regId);

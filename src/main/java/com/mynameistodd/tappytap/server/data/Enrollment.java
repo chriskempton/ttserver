@@ -12,22 +12,30 @@ public class Enrollment {
 
 	@Id
 	Long id;
-	String recipientID;
-	String senderID;
+	String recipientDeviceId;
+	String senderId;
 	
 	public String getRecipientID() {
-	    return recipientID;
+	    return recipientDeviceId;
 	}
 	
 	public void setRecipientID(String recipientID) {
-	    this.recipientID = recipientID;
+	    this.recipientDeviceId = recipientID;
 	}
 	
 	public String getSenderID() {
-	    return senderID;
+	    return senderId;
 	}
 	
 	public void setSenderID(String senderID) {
-	    this.senderID = senderID;
+	    this.senderId = senderID;
+	}
+	
+	public void save() {
+		DatastoreHelper.enroll(recipientDeviceId, senderId);
+	}
+	
+	public void remove() {
+		DatastoreHelper.unenroll(recipientDeviceId, senderId);
 	}
 }

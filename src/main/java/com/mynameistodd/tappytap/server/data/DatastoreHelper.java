@@ -26,8 +26,12 @@ import java.util.logging.Logger;
 public final class DatastoreHelper {
 
   public static final int MULTICAST_SIZE = 1000;
+  private static final String USER_TYPE = "User";
   private static final String DEVICE_TYPE = "Device";
-  private static final String DEVICE_REG_ID_PROPERTY = "regId";
+  private static final String ENROLLMENT_TYPE = "Enrollment";
+  private static final String DEVICE_REG_ID_PROPERTY = "registrationId";
+  private static final String USER_ID_PROPERTY = "userId";
+  private static final String SENDER_ID_PROPERTY = "senderId";
 
   private static final String MULTICAST_TYPE = "Multicast";
   private static final String MULTICAST_REG_IDS_PROPERTY = "regIds";
@@ -45,11 +49,64 @@ public final class DatastoreHelper {
   }
 
   /**
+   * Saves a User.
+   *
+   * @param userId user's registration id.
+   */
+  public static void saveUser(String userId) {
+    logger.info("Creating " + userId);
+    Transaction txn = datastore.beginTransaction();
+    try {
+      Entity entity = findUserById(userId);
+      if (entity != null) {
+        logger.fine(userId + " is already saved; ignoring.");
+        return;
+      }
+      entity = new Entity(USER_TYPE);
+      entity.setProperty(USER_ID_PROPERTY, userId);
+      datastore.put(entity);
+      txn.commit();
+    } finally {
+      if (txn.isActive()) {
+        txn.rollback();
+      }
+    }
+  }
+
+  /**
+   * Saves an enrollment.
+   *
+   * @param deviceId Recipient device's registration id.
+   * @param senderId sender's user id.
+   */
+  public static void enroll(String deviceId, String senderId) {
+    logger.info("Enrolling " + deviceId + " for sender " + senderId);
+    Transaction txn = datastore.beginTransaction();
+    try {
+      Entity entity = findEnrollmentByRegIdAndSenderId(deviceId, senderId);
+      if (entity != null) {
+        logger.fine(deviceId + " is already registered; ignoring.");
+        return;
+      }
+      entity = new Entity(ENROLLMENT_TYPE);
+      entity.setProperty(SENDER_ID_PROPERTY, senderId);
+      entity.setProperty(DEVICE_REG_ID_PROPERTY, deviceId);
+      datastore.put(entity);
+      txn.commit();
+    } finally {
+      if (txn.isActive()) {
+        txn.rollback();
+      }
+    }
+  }
+
+  /**
    * Registers a device.
    *
    * @param regId device's registration id.
+   * @param userId user's registration id.
    */
-  public static void register(String regId) {
+  public static void register(String regId, String userId) {
     logger.info("Registering " + regId);
     Transaction txn = datastore.beginTransaction();
     try {
@@ -59,6 +116,7 @@ public final class DatastoreHelper {
         return;
       }
       entity = new Entity(DEVICE_TYPE);
+      entity.setProperty(USER_ID_PROPERTY, userId);
       entity.setProperty(DEVICE_REG_ID_PROPERTY, regId);
       datastore.put(entity);
       txn.commit();
@@ -73,14 +131,67 @@ public final class DatastoreHelper {
    * Unregisters a device.
    *
    * @param regId device's registration id.
+   * @param userId user's registration id.
    */
   public static void unregister(String regId) {
-    logger.info("Unregistering " + regId);
+    logger.info("Registering " + regId);
     Transaction txn = datastore.beginTransaction();
     try {
       Entity entity = findDeviceByRegId(regId);
       if (entity == null) {
-        logger.warning("Device " + regId + " already unregistered");
+        logger.fine(regId + " is already unregistered.");
+        return;
+      } else {
+    	Key key = entity.getKey();
+      	datastore.delete(key);
+      }
+      txn.commit();
+    } finally {
+      if (txn.isActive()) {
+        txn.rollback();
+      }
+    }
+  }
+
+  /**
+   * Unenrolls a device from all senders.
+   *
+   * @param regId device's registration id.
+   */
+  public static void unenrollDevice(String regId) {
+    logger.info("Unenrolling " + regId + " from all senders");
+    Transaction txn = datastore.beginTransaction();
+    try {
+      List<Entity> entities = findEnrollmentsByRegId(regId);
+      if (entities == null || entities.size() == 0) {
+        logger.warning("Device " + regId + " already unenrolled");
+      } else {
+        for (Entity entity:entities) {
+        	Key key = entity.getKey();
+        	datastore.delete(key);
+        }
+      }
+      txn.commit();
+    } finally {
+      if (txn.isActive()) {
+        txn.rollback();
+      }
+    }
+  }
+
+  /**
+   * Unenrolls a device from a sender.
+   *
+   * @param regId device's registration id.
+   * @param senderId sender's user id.
+   */
+  public static void unenroll(String regId, String senderId) {
+    logger.info("Unenrolling " + regId + " from " + senderId);
+    Transaction txn = datastore.beginTransaction();
+    try {
+      Entity entity = findEnrollmentByRegIdAndSenderId(regId, senderId);
+      if (entity == null) {
+        logger.warning("Device " + regId + " already unenrolled");
       } else {
         Key key = entity.getKey();
         datastore.delete(key);
@@ -159,6 +270,23 @@ public final class DatastoreHelper {
     }
   }
 
+  private static Entity findUserById(String userId) {
+    Query query = new Query(USER_TYPE)
+        .addFilter(USER_ID_PROPERTY, FilterOperator.EQUAL, userId);
+    PreparedQuery preparedQuery = datastore.prepare(query);
+    List<Entity> entities = preparedQuery.asList(DEFAULT_FETCH_OPTIONS);
+    Entity entity = null;
+    if (!entities.isEmpty()) {
+      entity = entities.get(0);
+    }
+    int size = entities.size();
+    if (size > 0) {
+      logger.severe(
+          "Found " + size + " entities for userId " + userId + ": " + entities);
+    }
+    return entity;
+  }
+
   private static Entity findDeviceByRegId(String regId) {
     Query query = new Query(DEVICE_TYPE)
         .addFilter(DEVICE_REG_ID_PROPERTY, FilterOperator.EQUAL, regId);
@@ -174,6 +302,37 @@ public final class DatastoreHelper {
           "Found " + size + " entities for regId " + regId + ": " + entities);
     }
     return entity;
+  }
+
+  private static Entity findEnrollmentByRegIdAndSenderId(String regId, String senderId) {
+    Query query = new Query(ENROLLMENT_TYPE)
+    	.addFilter(DEVICE_REG_ID_PROPERTY, FilterOperator.EQUAL, regId)
+        .addFilter(SENDER_ID_PROPERTY, FilterOperator.EQUAL, senderId);
+    PreparedQuery preparedQuery = datastore.prepare(query);
+    List<Entity> entities = preparedQuery.asList(DEFAULT_FETCH_OPTIONS);
+    Entity entity = null;
+    if (!entities.isEmpty()) {
+      entity = entities.get(0);
+    }
+    int size = entities.size();
+    if (size > 0) {
+      logger.severe(
+          "Found " + size + " entities for regId " + regId + " and senderId " + senderId + ": " + entities);
+    }
+    return entity;
+  }
+
+  private static List<Entity> findEnrollmentsByRegId(String regId) {
+    Query query = new Query(ENROLLMENT_TYPE)
+    	.addFilter(DEVICE_REG_ID_PROPERTY, FilterOperator.EQUAL, regId);
+    PreparedQuery preparedQuery = datastore.prepare(query);
+    List<Entity> entities = preparedQuery.asList(DEFAULT_FETCH_OPTIONS);
+    int size = entities.size();
+    if (size > 0) {
+      logger.severe(
+          "Found " + size + " entities for regId " + regId + ": " + entities);
+    }
+    return entities;
   }
 
   /**
