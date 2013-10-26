@@ -28,9 +28,13 @@ public final class DatastoreHelper {
   public static final int MULTICAST_SIZE = 1000;
   private static final String USER_TYPE = "User";
   private static final String DEVICE_TYPE = "Device";
+  private static final String MESSAGE_SEND_TYPE = "MessageSend";
+  private static final String MESSAGE_TYPE = "Message";
   private static final String ENROLLMENT_TYPE = "Enrollment";
   private static final String DEVICE_REG_ID_PROPERTY = "registrationId";
   private static final String USER_ID_PROPERTY = "userId";
+  private static final String MESSAGE_PROPERTY = "Message";
+  private static final String RECIPIENT_ID_PROPERTY = "recipientId";
   private static final String SENDER_ID_PROPERTY = "senderId";
 
   private static final String MULTICAST_TYPE = "Multicast";
@@ -73,11 +77,57 @@ public final class DatastoreHelper {
     }
   }
 
+    /**
+     * Saves a message send.
+     *
+     * @param senderId Sender's user id.
+     * @param recipientId Recipient device's registration id.
+     * @param message message.
+     */
+    public static void saveMessageSend(String senderId, String recipientId, String message) {
+        logger.info("Saving messageSend record for sender " + senderId + " and recipient " + recipientId);
+        Transaction txn = datastore.beginTransaction();
+        try {
+            Entity entity = new Entity(MESSAGE_SEND_TYPE);
+            entity.setProperty(SENDER_ID_PROPERTY, senderId);
+            entity.setProperty(RECIPIENT_ID_PROPERTY, recipientId);
+            entity.setProperty(MESSAGE_PROPERTY, message);
+            datastore.put(entity);
+            txn.commit();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+            }
+        }
+    }
+
+    /**
+     * Saves a message.
+     *
+     * @param senderId Sender's user id.
+     * @param message message.
+     */
+    public static void saveMessage(String senderId, String message) {
+        logger.info("Saving message for sender " + senderId);
+        Transaction txn = datastore.beginTransaction();
+        try {
+            Entity entity = new Entity(MESSAGE_TYPE);
+            entity.setProperty(SENDER_ID_PROPERTY, senderId);
+            entity.setProperty(MESSAGE_PROPERTY, message);
+            datastore.put(entity);
+            txn.commit();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+            }
+        }
+    }
+
   /**
    * Saves an enrollment.
    *
    * @param deviceId Recipient device's registration id.
-   * @param senderId sender's user id.
+   * @param senderId Sender's user id.
    */
   public static void enroll(String deviceId, String senderId) {
     logger.info("Enrolling " + deviceId + " for sender " + senderId);
@@ -131,7 +181,6 @@ public final class DatastoreHelper {
    * Unregisters a device.
    *
    * @param regId device's registration id.
-   * @param userId user's registration id.
    */
   public static void unregister(String regId) {
     logger.info("Registering " + regId);

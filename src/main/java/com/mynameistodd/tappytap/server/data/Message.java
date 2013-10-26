@@ -13,8 +13,21 @@ public class Message {
 	@Id
 	Long id;
 	String message;
+    String userId;
 	
 	public Message(String message) {
 		this.message = message;
 	}
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public void save() {
+        DatastoreHelper.saveMessage(userId, message);
+    }
 }

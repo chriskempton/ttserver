@@ -48,5 +48,8 @@ public class MessageSend {
     public void setMessageText(String messageText) {
         this.messageText = messageText;
     }
-    
+
+    public void save() {
+        DatastoreHelper.saveMessageSend(senderID, recipientID, messageText);
+    }
 }

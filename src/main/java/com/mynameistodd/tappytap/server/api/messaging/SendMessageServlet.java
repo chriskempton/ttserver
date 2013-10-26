@@ -9,6 +9,7 @@ import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Device;
+import com.mynameistodd.tappytap.server.data.MessageSend;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class SendMessageServlet extends BaseServlet {
 
   static final String PARAMETER_DEVICE = "device";
   static final String PARAMETER_MULTICAST = "multicastKey";
+  static final String PARAMETER_SENDER = "senderId";
   static final String PARAMETER_MESSAGE = "message";
 
   private Sender sender;
@@ -86,10 +88,18 @@ public class SendMessageServlet extends BaseServlet {
       }
     }
     String message = req.getParameter(PARAMETER_MESSAGE);
-    
+    String sender = req.getParameter(PARAMETER_SENDER);
     String regId = req.getParameter(PARAMETER_DEVICE);
+    com.mynameistodd.tappytap.server.data.Message theMessage = new com.mynameistodd.tappytap.server.data.Message(message);
+    theMessage.setUserId(sender);
+    theMessage.save();
+
+    MessageSend messageSend = new MessageSend();
+    messageSend.setMessageText(message);
+    messageSend.setRecipientID(regId);
+    messageSend.setSenderID(sender);
     if (regId != null) {
-      sendSingleMessage(regId, resp, message);
+      sendSingleMessage(messageSend, resp);
       return;
     }
     String multicastKey = req.getParameter(PARAMETER_MULTICAST);
@@ -107,12 +117,12 @@ public class SendMessageServlet extends BaseServlet {
     return message;
   }
 
-  private void sendSingleMessage(String regId, HttpServletResponse resp, String messageText) {
-    logger.info("Sending message to device " + regId);
-    Message message = createMessage(messageText);
+  private void sendSingleMessage(MessageSend messageSend, HttpServletResponse resp) {
+    logger.info("Sending message to device " + messageSend.getRecipientID());
+    Message message = createMessage(messageSend.getMessageText());
     Result result;
     try {
-      result = sender.sendNoRetry(message, regId);
+      result = sender.sendNoRetry(message, messageSend.getRecipientID());
     } catch (IOException e) {
       logger.log(Level.SEVERE, "Exception posting " + message, e);
       taskDone(resp);
@@ -123,22 +133,23 @@ public class SendMessageServlet extends BaseServlet {
       return;
     }
     if (result.getMessageId() != null) {
-      logger.info("Succesfully sent message to device " + regId);
+        messageSend.save();
+      logger.info("Succesfully sent message to device " + messageSend.getRecipientID());
       String canonicalRegId = result.getCanonicalRegistrationId();
       if (canonicalRegId != null) {
-        // same device has more than on registration id: update it
+        // same device has more than one registration id: update it
         logger.finest("canonicalRegId " + canonicalRegId);
-        DatastoreHelper.updateRegistration(regId, canonicalRegId);
+        DatastoreHelper.updateRegistration(messageSend.getRecipientID(), canonicalRegId);
       }
     } else {
       String error = result.getErrorCodeName();
       if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
         // application has been removed from device - unregister it
     	Device theDevice = new Device();
-    	theDevice.setDeviceId(regId);
+    	theDevice.setDeviceId(messageSend.getRecipientID());
     	theDevice.remove();
       } else {
-        logger.severe("Error sending message to device " + regId
+        logger.severe("Error sending message to device " + messageSend.getRecipientID()
             + ": " + error);
       }
     }
