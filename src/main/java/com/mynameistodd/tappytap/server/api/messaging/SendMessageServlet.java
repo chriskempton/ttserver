@@ -1,20 +1,13 @@
 package com.mynameistodd.tappytap.server.api.messaging;
 
-import com.google.android.gcm.server.Constants;
-import com.google.android.gcm.server.Message;
-import com.google.android.gcm.server.MulticastResult;
-import com.google.android.gcm.server.Result;
-import com.google.android.gcm.server.Sender;
-import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.DatastoreHelper;
-import com.mynameistodd.tappytap.server.data.Device;
+import com.mynameistodd.tappytap.server.data.Message;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -38,20 +31,9 @@ public class SendMessageServlet extends BaseServlet {
   static final String PARAMETER_SENDER = "senderId";
   static final String PARAMETER_MESSAGE = "message";
 
-  private Sender sender;
-
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
-    sender = newSender(config);
-  }
-
-  /**
-   * Creates the {@link Sender} based on the servlet settings.
-   */
-  protected Sender newSender(ServletConfig config) {
-    String key = ApiKeyInitializer.getAccessKey();
-    return new Sender(key);
   }
 
   /**
@@ -90,7 +72,7 @@ public class SendMessageServlet extends BaseServlet {
     String message = req.getParameter(PARAMETER_MESSAGE);
     String sender = req.getParameter(PARAMETER_SENDER);
     String regId = req.getParameter(PARAMETER_DEVICE);
-    com.mynameistodd.tappytap.server.data.Message theMessage = new com.mynameistodd.tappytap.server.data.Message(message);
+    Message theMessage = new Message(message);
     theMessage.setUserId(sender);
     theMessage.save();
 
@@ -99,12 +81,19 @@ public class SendMessageServlet extends BaseServlet {
     messageSend.setRecipientID(regId);
     messageSend.setSenderID(sender);
     if (regId != null) {
-      sendSingleMessage(messageSend, resp);
+      IMessageService messageService = MessageServiceFactory.getInstance();
+      try {
+          messageService.send(messageSend);
+      } catch (IOException ioe) {
+          taskDone(resp);
+      } catch (NullPointerException npe) {
+          retryTask(resp);
+      }
       return;
     }
     String multicastKey = req.getParameter(PARAMETER_MULTICAST);
     if (multicastKey != null) {
-      sendMulticastMessage(multicastKey, resp, message);
+      sendMulticastMessage(multicastKey, sender, message, resp);
       return;
     }
     logger.severe("Invalid request!");
@@ -112,105 +101,30 @@ public class SendMessageServlet extends BaseServlet {
     return;
   }
 
-  private Message createMessage(String messageText) {
-    Message message = new Message.Builder().addData("key1", messageText).build();
-    return message;
-  }
-
-  private void sendSingleMessage(MessageSend messageSend, HttpServletResponse resp) {
-    logger.info("Sending message to device " + messageSend.getRecipientID());
-    Message message = createMessage(messageSend.getMessageText());
-    Result result;
-    try {
-      result = sender.sendNoRetry(message, messageSend.getRecipientID());
-    } catch (IOException e) {
-      logger.log(Level.SEVERE, "Exception posting " + message, e);
-      taskDone(resp);
-      return;
-    }
-    if (result == null) {
-      retryTask(resp);
-      return;
-    }
-    if (result.getMessageId() != null) {
-        messageSend.save();
-      logger.info("Succesfully sent message to device " + messageSend.getRecipientID());
-      String canonicalRegId = result.getCanonicalRegistrationId();
-      if (canonicalRegId != null) {
-        // same device has more than one registration id: update it
-        logger.finest("canonicalRegId " + canonicalRegId);
-        DatastoreHelper.updateRegistration(messageSend.getRecipientID(), canonicalRegId);
-      }
-    } else {
-      String error = result.getErrorCodeName();
-      if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
-        // application has been removed from device - unregister it
-    	Device theDevice = new Device();
-    	theDevice.setDeviceId(messageSend.getRecipientID());
-    	theDevice.remove();
-      } else {
-        logger.severe("Error sending message to device " + messageSend.getRecipientID()
-            + ": " + error);
-      }
-    }
-  }
-
-  private void sendMulticastMessage(String multicastKey,
-      HttpServletResponse resp, String messageText) {
+  private void sendMulticastMessage(String multicastKey, String senderId, String messageText, HttpServletResponse resp) {
     // Recover registration ids from datastore
     List<String> regIds = DatastoreHelper.getMulticast(multicastKey);
-    Message message = createMessage(messageText);
-    MulticastResult multicastResult;
+    List<MessageSend> messageSends = new ArrayList<MessageSend>();
+    for(String regId:regIds) {
+        MessageSend messageSend = new MessageSend();
+        messageSend.setMessageText(messageText);
+        messageSend.setSenderID(senderId);
+        messageSend.setRecipientID(regId);
+        messageSends.add(messageSend);
+    }
+    List<MessageSend> messageSendsOutput = null;
     try {
-      multicastResult = sender.sendNoRetry(message, regIds);
+      IMessageService messageService = MessageServiceFactory.getInstance();
+      messageSendsOutput = messageService.sendMulticastReturnRetries(messageSends);
     } catch (IOException e) {
-      logger.log(Level.SEVERE, "Exception posting " + message, e);
       multicastDone(resp, multicastKey);
       return;
-    }
-    boolean allDone = true;
-    // check if any registration id must be updated
-    if (multicastResult.getCanonicalIds() != 0) {
-      List<Result> results = multicastResult.getResults();
-      for (int i = 0; i < results.size(); i++) {
-        String canonicalRegId = results.get(i).getCanonicalRegistrationId();
-        if (canonicalRegId != null) {
-          String regId = regIds.get(i);
-          DatastoreHelper.updateRegistration(regId, canonicalRegId);
+    } finally {
+        if (messageSendsOutput == null || messageSendsOutput.size() == 0) {
+          multicastDone(resp, multicastKey);
+        } else {
+          retryTask(resp);
         }
-      }
-    }
-    if (multicastResult.getFailure() != 0) {
-      // there were failures, check if any could be retried
-      List<Result> results = multicastResult.getResults();
-      List<String> retriableRegIds = new ArrayList<String>();
-      for (int i = 0; i < results.size(); i++) {
-        String error = results.get(i).getErrorCodeName();
-        if (error != null) {
-          String regId = regIds.get(i);
-          logger.warning("Got error (" + error + ") for regId " + regId);
-          if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
-            // application has been removed from device - unregister it
-            Device theDevice = new Device();
-            theDevice.setDeviceId(regId);
-            theDevice.remove();
-          }
-          if (error.equals(Constants.ERROR_UNAVAILABLE)) {
-            retriableRegIds.add(regId);
-          }
-        }
-      }
-      if (!retriableRegIds.isEmpty()) {
-        // update task
-        DatastoreHelper.updateMulticast(multicastKey, retriableRegIds);
-        allDone = false;
-        retryTask(resp);
-      }
-    }
-    if (allDone) {
-      multicastDone(resp, multicastKey);
-    } else {
-      retryTask(resp);
     }
   }
 
