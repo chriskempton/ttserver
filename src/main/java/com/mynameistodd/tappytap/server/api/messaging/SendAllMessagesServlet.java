@@ -6,8 +6,6 @@ import com.google.appengine.api.taskqueue.Queue;
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.taskqueue.TaskOptions.Method;
-import com.googlecode.objectify.Objectify;
-import com.googlecode.objectify.ObjectifyService;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
@@ -41,13 +39,10 @@ public class SendAllMessagesServlet extends BaseServlet {
       status = "Message ignored as there is no device registered!";
     } else {
     	
-    	String messageText = req.getParameter("message");
+      String messageText = req.getParameter("message");
     	
-    	Objectify ofy = ObjectifyService.ofy();
-    	
-    	Message msg = new Message(messageText);
-    	ofy.save().entity(msg).now();
-    	
+      Message msg = new Message(messageText);
+      msg.save();
     	
       Queue queue = QueueFactory.getQueue("gcm");
       // NOTE: check below is for demonstration purposes; a real application
