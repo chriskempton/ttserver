@@ -1,7 +1,7 @@
 package com.mynameistodd.tappytap.server.api.messaging;
 
 import com.mynameistodd.tappytap.server.api.BaseServlet;
-import com.mynameistodd.tappytap.server.data.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 

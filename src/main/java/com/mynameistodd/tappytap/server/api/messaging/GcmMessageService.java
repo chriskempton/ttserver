@@ -2,7 +2,7 @@ package com.mynameistodd.tappytap.server.api.messaging;
 
 import com.google.android.gcm.server.*;
 import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
-import com.mynameistodd.tappytap.server.data.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 

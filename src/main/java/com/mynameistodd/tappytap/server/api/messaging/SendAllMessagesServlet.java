@@ -7,8 +7,9 @@ import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.taskqueue.TaskOptions.Method;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
-import com.mynameistodd.tappytap.server.data.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
+import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.webclient.HomeServlet;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class SendAllMessagesServlet extends BaseServlet {
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
       throws IOException, ServletException {
-    List<String> devices = DatastoreHelper.getDevices();
+    List<Device> devices = DatastoreHelper.getDevices();
     String status;
     if (devices.isEmpty()) {
       status = "Message ignored as there is no device registered!";
@@ -49,7 +50,7 @@ public class SendAllMessagesServlet extends BaseServlet {
       // could always send a multicast, even for just one recipient
       if (devices.size() == 1) {
         // send a single message using plain post
-        String device = devices.get(0);
+        String device = devices.get(0).getDeviceId();
         queue.add(withUrl("/send").param(
             SendMessageServlet.PARAMETER_DEVICE, device).param(SendMessageServlet.PARAMETER_MESSAGE, messageText));
         status = "Single message queued for registration id " + device;
@@ -60,9 +61,9 @@ public class SendAllMessagesServlet extends BaseServlet {
         List<String> partialDevices = new ArrayList<String>(total);
         int counter = 0;
         int tasks = 0;
-        for (String device : devices) {
+        for (Device device:devices) {
           counter++;
-          partialDevices.add(device);
+          partialDevices.add(device.getDeviceId());
           int partialSize = partialDevices.size();
           if (partialSize == DatastoreHelper.MULTICAST_SIZE || counter == total) {
             String multicastKey = DatastoreHelper.createMulticast(partialDevices);

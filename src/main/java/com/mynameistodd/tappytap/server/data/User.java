@@ -9,7 +9,7 @@ import com.googlecode.objectify.annotation.Id;
  * A User can enroll in other Users' notifications and have enrollees of his/her own.
  */
 @Entity
-public class User {
+public class User extends TappyTapData {
     
 	@Id
 	Long id;
@@ -21,9 +21,5 @@ public class User {
 
     public void setUserID(String userID) {
         this.userId = userID;
-    }
-
-    public void save() {
-		DatastoreHelper.saveUser(userId);    	
     }
 }

@@ -5,7 +5,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.mynameistodd.tappytap.server.api.BaseServlet;
-import com.mynameistodd.tappytap.server.data.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Enrollment;
 
 /**

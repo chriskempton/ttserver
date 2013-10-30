@@ -8,7 +8,7 @@ import com.googlecode.objectify.annotation.Id;
  * An Enrollment is a mapping of one sender User to one recipient User.
  */
 @Entity
-public class Enrollment {
+public class Enrollment extends TappyTapData {
 
 	@Id
 	Long id;
@@ -29,13 +29,5 @@ public class Enrollment {
 	
 	public void setSenderID(String senderID) {
 	    this.senderId = senderID;
-	}
-	
-	public void save() {
-		DatastoreHelper.enroll(recipientDeviceId, senderId);
-	}
-	
-	public void remove() {
-		DatastoreHelper.unenroll(recipientDeviceId, senderId);
 	}
 }

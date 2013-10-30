@@ -8,7 +8,7 @@ import com.googlecode.objectify.annotation.Id;
  * A Message is a text that a User has sent.  It can be reused.
  */
 @Entity
-public class Message {
+public class Message extends TappyTapData {
 	
 	@Id
 	Long id;
@@ -25,9 +25,5 @@ public class Message {
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public void save() {
-        DatastoreHelper.saveMessage(userId, message);
     }
 }

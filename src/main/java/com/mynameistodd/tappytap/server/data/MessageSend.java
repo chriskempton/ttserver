@@ -8,7 +8,7 @@ import com.googlecode.objectify.annotation.Id;
  * A MessageSend is an individual instance of a Message being sent to a recipient
  */
 @Entity
-public class MessageSend {
+public class MessageSend extends TappyTapData {
 
     @Id
     Long id;
@@ -47,9 +47,5 @@ public class MessageSend {
 
     public void setMessageText(String messageText) {
         this.messageText = messageText;
-    }
-
-    public void save() {
-        DatastoreHelper.saveMessageSend(senderID, recipientID, messageText);
     }
 }
