@@ -4,6 +4,7 @@ import com.google.android.gcm.server.*;
 import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.MessageSend;
+import com.mynameistodd.tappytap.server.data.User;
 
 import javax.servlet.ServletConfig;
 import java.io.IOException;
@@ -24,11 +25,11 @@ public class GcmMessageService implements IMessageService {
 
     @Override
     public void send(MessageSend messageSend) throws IOException {
-        logger.info("Sending message to device " + messageSend.getRecipientID());
-        Message message = createMessage(messageSend.getMessageText());
+        logger.info("Sending message to device " + messageSend.getRecipient().getDeviceId());
+        Message message = createMessage(messageSend.getMessage().getMessage());
         Result result;
         try {
-            result = sender.sendNoRetry(message, messageSend.getRecipientID());
+            result = sender.sendNoRetry(message, messageSend.getRecipient().getDeviceId());
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Exception posting " + message, e);
             throw e;
@@ -38,12 +39,12 @@ public class GcmMessageService implements IMessageService {
         }
         if (result.getMessageId() != null) {
             messageSend.save();
-            logger.info("Succesfully sent message to device " + messageSend.getRecipientID());
+            logger.info("Succesfully sent message to device " + messageSend.getRecipient().getDeviceId());
             String canonicalRegId = result.getCanonicalRegistrationId();
             if (canonicalRegId != null) {
                 // same device has more than one registration id: update it
                 logger.finest("canonicalRegId " + canonicalRegId);
-                Device recipientDevice = Device.findById(messageSend.getRecipientID());
+                Device recipientDevice = Device.findById(messageSend.getRecipient().getDeviceId());
                 recipientDevice.updateRegistration(canonicalRegId);
             }
         } else {
@@ -51,10 +52,10 @@ public class GcmMessageService implements IMessageService {
             if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
                 // application has been removed from device - unregister it
                 Device theDevice = new Device();
-                theDevice.setDeviceId(messageSend.getRecipientID());
+                theDevice.setDeviceId(messageSend.getRecipient().getDeviceId());
                 theDevice.remove();
             } else {
-                logger.severe("Error sending message to device " + messageSend.getRecipientID()
+                logger.severe("Error sending message to device " + messageSend.getRecipient().getDeviceId()
                         + ": " + error);
             }
         }
@@ -62,15 +63,15 @@ public class GcmMessageService implements IMessageService {
 
     @Override
     public List<MessageSend> sendMulticastReturnRetries(List<MessageSend> messageSends) throws IOException {
-        List<String> regIds = new ArrayList<String>();
-        String messageText = null;
+        List<String> regIds = new ArrayList<>();
+        com.mynameistodd.tappytap.server.data.Message theMessage = null;
         String senderId = null;
         for(MessageSend messageSend:messageSends){
-            regIds.add(messageSend.getRecipientID());
-            messageText = messageSend.getMessageText();
-            senderId = messageSend.getSenderID();
+            regIds.add(messageSend.getRecipient().getDeviceId());
+            theMessage = messageSend.getMessage();
+            senderId = messageSend.getSender().getEmail();
         }
-        Message message = createMessage(messageText);
+        Message message = createMessage(theMessage.getMessage());
         MulticastResult multicastResult;
         try {
             multicastResult = sender.sendNoRetry(message, regIds);
@@ -90,7 +91,7 @@ public class GcmMessageService implements IMessageService {
                 }
             }
         }
-        List<MessageSend> retriableMessageSends = new ArrayList<MessageSend>();
+        List<MessageSend> retriableMessageSends = new ArrayList<>();
         if (multicastResult.getFailure() != 0) {
             // there were failures, check if any could be retried
             List<Result> results = multicastResult.getResults();
@@ -101,15 +102,14 @@ public class GcmMessageService implements IMessageService {
                     logger.warning("Got error (" + error + ") for regId " + regId);
                     if (error.equals(Constants.ERROR_NOT_REGISTERED)) {
                         // application has been removed from device - unregister it
-                        Device theDevice = new Device();
-                        theDevice.setDeviceId(regId);
+                        Device theDevice = Device.findById(regId);
                         theDevice.remove();
                     }
                     if (error.equals(Constants.ERROR_UNAVAILABLE)) {
                         MessageSend messageSend = new MessageSend();
-                        messageSend.setMessageText(messageText);
-                        messageSend.setRecipientID(regId);
-                        messageSend.setSenderID(senderId);
+                        messageSend.setMessage(theMessage);
+                        messageSend.setRecipient(Device.findById(regId));
+                        messageSend.setSender(User.findByEmail(senderId));
                         retriableMessageSends.add(messageSend);
                     }
                 }
@@ -132,7 +132,6 @@ public class GcmMessageService implements IMessageService {
     }
 
     private Message createMessage(String messageText) {
-        Message message = new Message.Builder().addData("key1", messageText).build();
-        return message;
+        return new Message.Builder().addData("key1", messageText).build();
     }
 }

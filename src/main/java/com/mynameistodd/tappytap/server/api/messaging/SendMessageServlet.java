@@ -1,6 +1,8 @@
 package com.mynameistodd.tappytap.server.api.messaging;
 
 import com.mynameistodd.tappytap.server.api.BaseServlet;
+import com.mynameistodd.tappytap.server.data.Device;
+import com.mynameistodd.tappytap.server.data.User;
 import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
 import com.mynameistodd.tappytap.server.data.MessageSend;
@@ -72,14 +74,15 @@ public class SendMessageServlet extends BaseServlet {
     String message = req.getParameter(PARAMETER_MESSAGE);
     String sender = req.getParameter(PARAMETER_SENDER);
     String regId = req.getParameter(PARAMETER_DEVICE);
-    Message theMessage = new Message(message);
-    theMessage.setUserId(sender);
+    Message theMessage = new Message();
+    theMessage.setMessage(message);
+    theMessage.setSender(User.findByEmail(sender));
     theMessage.save();
 
     MessageSend messageSend = new MessageSend();
-    messageSend.setMessageText(message);
-    messageSend.setRecipientID(regId);
-    messageSend.setSenderID(sender);
+    messageSend.setMessage(theMessage);
+    messageSend.setRecipient(Device.findById(regId));
+    messageSend.setSender(User.findByEmail(sender));
     if (regId != null) {
       IMessageService messageService = MessageServiceFactory.getInstance();
       try {
@@ -93,7 +96,7 @@ public class SendMessageServlet extends BaseServlet {
     }
     String multicastKey = req.getParameter(PARAMETER_MULTICAST);
     if (multicastKey != null) {
-      sendMulticastMessage(multicastKey, sender, message, resp);
+      sendMulticastMessage(multicastKey, sender, theMessage, resp);
       return;
     }
     logger.severe("Invalid request!");
@@ -101,15 +104,15 @@ public class SendMessageServlet extends BaseServlet {
     return;
   }
 
-  private void sendMulticastMessage(String multicastKey, String senderId, String messageText, HttpServletResponse resp) {
+  private void sendMulticastMessage(String multicastKey, String senderId, Message message, HttpServletResponse resp) {
     // Recover registration ids from datastore
     List<String> regIds = DatastoreHelper.getMulticast(multicastKey);
     List<MessageSend> messageSends = new ArrayList<MessageSend>();
     for(String regId:regIds) {
         MessageSend messageSend = new MessageSend();
-        messageSend.setMessageText(messageText);
-        messageSend.setSenderID(senderId);
-        messageSend.setRecipientID(regId);
+        messageSend.setMessage(message);
+        messageSend.setSender(User.findByEmail(senderId));
+        messageSend.setRecipient(Device.findById(regId));
         messageSends.add(messageSend);
     }
     List<MessageSend> messageSendsOutput = null;

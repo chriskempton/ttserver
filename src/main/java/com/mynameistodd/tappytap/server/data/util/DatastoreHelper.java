@@ -7,14 +7,15 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.PreparedQuery;
-import com.google.appengine.api.datastore.Query;
-import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Transaction;
+import com.mynameistodd.tappytap.server.data.Enrollment;
+import com.mynameistodd.tappytap.server.data.Device;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
+
+import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
 
 /**
  * Simple implementation of a data store using standard Java collections.
@@ -25,8 +26,6 @@ import java.util.logging.Logger;
 public final class DatastoreHelper {
 
   public static final int MULTICAST_SIZE = 1000;
-  private static final String ENROLLMENT_TYPE = "Enrollment";
-  private static final String DEVICE_REG_ID_PROPERTY = "registrationId";
 
   private static final String MULTICAST_TYPE = "Multicast";
   private static final String MULTICAST_REG_IDS_PROPERTY = "regIds";
@@ -50,36 +49,18 @@ public final class DatastoreHelper {
    */
   public static void unenrollDevice(String regId) {
     logger.info("Unenrolling " + regId + " from all senders");
-    Transaction txn = datastore.beginTransaction();
-    try {
-      List<Entity> entities = findEnrollmentsByRegId(regId);
-      if (entities == null || entities.size() == 0) {
+    List<Enrollment> entities = findEnrollmentsByRegId(regId);
+    if (entities == null || entities.size() == 0) {
         logger.warning("Device " + regId + " already unenrolled");
-      } else {
-        for (Entity entity:entities) {
-        	Key key = entity.getKey();
-        	datastore.delete(key);
+    } else {
+        for (Enrollment entity:entities) {
+            entity.remove();
         }
-      }
-      txn.commit();
-    } finally {
-      if (txn.isActive()) {
-        txn.rollback();
-      }
     }
   }
 
-  private static List<Entity> findEnrollmentsByRegId(String regId) {
-    Query query = new Query(ENROLLMENT_TYPE)
-    	.addFilter(DEVICE_REG_ID_PROPERTY, FilterOperator.EQUAL, regId);
-    PreparedQuery preparedQuery = datastore.prepare(query);
-    List<Entity> entities = preparedQuery.asList(DEFAULT_FETCH_OPTIONS);
-    int size = entities.size();
-    if (size > 0) {
-      logger.severe(
-          "Found " + size + " entities for regId " + regId + ": " + entities);
-    }
-    return entities;
+  private static List<Enrollment> findEnrollmentsByRegId(String regId) {
+    return ofy().load().type(Enrollment.class).filter("sender", Device.findById(regId)).list();
   }
 
   /**

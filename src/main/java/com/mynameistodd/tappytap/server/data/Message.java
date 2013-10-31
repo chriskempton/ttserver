@@ -1,7 +1,10 @@
 package com.mynameistodd.tappytap.server.data;
 
+import com.googlecode.objectify.Ref;
 import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
+import com.googlecode.objectify.annotation.Index;
+import com.googlecode.objectify.annotation.Load;
 
 /**
  * Created by ckempton on 9/7/13.
@@ -13,17 +16,23 @@ public class Message extends TappyTapData {
 	@Id
 	Long id;
 	String message;
-    String userId;
-	
-	public Message(String message) {
-		this.message = message;
-	}
+    @Index
+    @Load
+    Ref<User> sender;
 
-    public String getUserId() {
-        return userId;
+    public String getMessage() {
+        return message;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public User getSender() {
+        return sender.getValue();
+    }
+
+    public void setSender(User sender) {
+        this.sender = Ref.create(sender);
     }
 }

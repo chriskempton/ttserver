@@ -43,8 +43,8 @@ public class RegisterServlet extends BaseServlet {
     theDevice.save();
     
     Enrollment theEnrollment = new Enrollment();
-    theEnrollment.setRecipientID(deviceId);
-    theEnrollment.setSenderID(senderId);
+    theEnrollment.setRecipient(Device.findById(deviceId));
+    theEnrollment.setSender(User.findByEmail(senderId));
     theEnrollment.save();
     
     setSuccess(resp);

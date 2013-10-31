@@ -32,6 +32,7 @@ public class OfyServiceTest {
 
     public static final String deviceId = "uwyfgwuicnhqw9eu34";
     public static final String email = "chriskempton97@gmail.com";
+    public static final String email2 = "todd.deland@gmail.com";
 
     @Test
     public void testInsert() {
@@ -43,6 +44,16 @@ public class OfyServiceTest {
         theDevice.setDeviceId(deviceId);
         theDevice.setUser(theUser);
         theDevice.save();
+
+        User theSender = new User();
+        theSender.setEmail(email2);
+        theSender.save();
+
+        Enrollment theEnrollment = new Enrollment();
+        theEnrollment.setSender(theSender);
+        theEnrollment.setRecipient(theDevice);
+        theEnrollment.save();
+
         System.out.println("Input Device Id: " + theDevice.getDeviceId());
         System.out.println("Input User email: " + theDevice.getUser().getEmail());
     }
@@ -77,5 +88,22 @@ public class OfyServiceTest {
             }
         }
         assertTrue(devices.size() > 0);
+    }
+
+    @Test
+    public void getEnrollmentsByDeviceId() {
+        System.out.println();
+        System.out.println("Selecting all Enrollments for the device");
+        System.out.println("-------------------------");
+        List<Enrollment> enrollments = ofy().load().type(Enrollment.class).filter("sender", User.findByEmail(email2)).list();
+        for(Enrollment enrollment:enrollments) {
+            if(enrollment != null){
+                System.out.println("Output Device Id: " + enrollment.getRecipient().getDeviceId());
+                System.out.println("Output User email: " + enrollment.getRecipient().getUser().getEmail());
+            } else {
+                System.out.println("Output is null!");
+            }
+        }
+        assertTrue(enrollments.size() > 0);
     }
 }

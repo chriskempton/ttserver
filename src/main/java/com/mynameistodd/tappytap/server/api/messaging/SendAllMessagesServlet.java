@@ -7,6 +7,7 @@ import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.taskqueue.TaskOptions.Method;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
+import com.mynameistodd.tappytap.server.data.User;
 import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
 import com.mynameistodd.tappytap.server.data.Device;
@@ -28,6 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 @SuppressWarnings("serial")
 public class SendAllMessagesServlet extends BaseServlet {
 
+    static final String PARAMETER_SENDER = "senderId";
+    static final String PARAMETER_MESSAGE = "message";
+
   /**
    * Processes the request to add a new message.
    */
@@ -40,9 +44,12 @@ public class SendAllMessagesServlet extends BaseServlet {
       status = "Message ignored as there is no device registered!";
     } else {
     	
-      String messageText = req.getParameter("message");
-    	
-      Message msg = new Message(messageText);
+      String messageText = req.getParameter(PARAMETER_MESSAGE);
+      String sender = req.getParameter(PARAMETER_SENDER);
+
+      Message msg = new Message();
+      msg.setMessage(messageText);
+      msg.setSender(User.findByEmail(sender));
       msg.save();
     	
       Queue queue = QueueFactory.getQueue("gcm");
@@ -58,7 +65,7 @@ public class SendAllMessagesServlet extends BaseServlet {
         // send a multicast message using JSON
         // must split in chunks of 1000 devices (GCM limit)
         int total = devices.size();
-        List<String> partialDevices = new ArrayList<String>(total);
+        List<String> partialDevices = new ArrayList<>(total);
         int counter = 0;
         int tasks = 0;
         for (Device device:devices) {
