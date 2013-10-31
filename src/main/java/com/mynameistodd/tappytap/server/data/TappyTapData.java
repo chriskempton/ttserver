@@ -18,6 +18,6 @@ public class TappyTapData {
     }
 
     public void remove() {
-        objectifyService.delete().entity(this);
+        objectifyService.delete().entity(this).now();
     }
 }
