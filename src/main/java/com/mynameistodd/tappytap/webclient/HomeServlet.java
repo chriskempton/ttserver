@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.mynameistodd.tappytap.server.api.BaseServlet;
-import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.Device;
 
 /**
  * Servlet that displays number of devices and button to send a message.
@@ -39,7 +39,7 @@ public class HomeServlet extends BaseServlet {
     if (status != null) {
       out.print(status);
     }
-    int total = DatastoreHelper.getTotalDevices();
+    int total = Device.getTotalCount();
     if (total == 0) {
       out.print("<h2>No devices registered!</h2>");
     } else {

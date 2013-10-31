@@ -11,11 +11,7 @@ import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Transaction;
-import com.googlecode.objectify.Objectify;
-import com.googlecode.objectify.ObjectifyService;
-import com.mynameistodd.tappytap.server.data.Device;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -28,7 +24,6 @@ import java.util.logging.Logger;
  */
 public final class DatastoreHelper {
 
-  private static Objectify objectifyService = ObjectifyService.ofy();
   public static final int MULTICAST_SIZE = 1000;
   private static final String ENROLLMENT_TYPE = "Enrollment";
   private static final String DEVICE_REG_ID_PROPERTY = "registrationId";
@@ -72,47 +67,6 @@ public final class DatastoreHelper {
         txn.rollback();
       }
     }
-  }
-
-  /**
-   * Updates the registration id of a device.
-   */
-  public static void updateRegistration(String oldId, String newId) {
-    logger.info("Updating " + oldId + " to " + newId);
-    Transaction txn = datastore.beginTransaction();
-    try {
-      Entity entity = findDeviceByRegId(oldId);
-      if (entity == null) {
-        logger.warning("No device for registration id " + oldId);
-        return;
-      }
-      entity.setProperty(DEVICE_REG_ID_PROPERTY, newId);
-      datastore.put(entity);
-      txn.commit();
-    } finally {
-      if (txn.isActive()) {
-        txn.rollback();
-      }
-    }
-  }
-
-  /**
-   * Gets all registered devices.
-   */
-  public static List<Device> getDevices() {
-      return objectifyService.load().type(Device.class).list();
-  }
-
-  /**
-   * Gets the number of total devices.
-   */
-  public static int getTotalDevices() {
-    return getDevices().size();
-  }
-
-  private static Entity findDeviceByRegId(String regId) {
-      return null;
-      // Device c = objectifyService.load().type(Device.class).filter("deviceId", regId);
   }
 
   private static List<Entity> findEnrollmentsByRegId(String regId) {

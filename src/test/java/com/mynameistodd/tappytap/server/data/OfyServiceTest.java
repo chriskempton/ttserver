@@ -49,7 +49,8 @@ public class OfyServiceTest {
 
     @Test
     public void testGetOneDevice() {
-        System.out.println("Selecting a single Device");
+        System.out.println();
+        System.out.println("Selecting a single Device by Id");
         System.out.println("-------------------------");
         Device theDevice = ofy().load().type(Device.class).id(deviceId).now();
         if(theDevice != null) {
@@ -63,13 +64,14 @@ public class OfyServiceTest {
 
     @Test
     public void getGetAllDevices() {
+        System.out.println();
         System.out.println("Selecting all Devices");
         System.out.println("-------------------------");
         List<Device> devices = ofy().load().type(Device.class).list();
-        for(Device theeDevice:devices) {
-            if(theeDevice != null) {
-                System.out.println("Output Device Id: " + theeDevice.getDeviceId());
-                System.out.println("Output User email: " + theeDevice.getUser().getEmail());
+        for(Device theDevice:devices) {
+            if(theDevice != null) {
+                System.out.println("Output Device Id: " + theDevice.getDeviceId());
+                System.out.println("Output User email: " + theDevice.getUser().getEmail());
             } else {
                 System.out.println("Output is null!");
             }

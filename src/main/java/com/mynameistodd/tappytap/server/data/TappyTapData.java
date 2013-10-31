@@ -1,23 +1,21 @@
 package com.mynameistodd.tappytap.server.data;
 
-import com.googlecode.objectify.annotation.Ignore;
-import com.googlecode.objectify.Objectify;
-import com.mynameistodd.tappytap.server.data.util.OfyService;
+import com.googlecode.objectify.annotation.Entity;
+import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
 
 /**
  * Created with IntelliJ IDEA.
  * User: ckempton
  * Date: 10/29/13
  */
+@Entity
 public class TappyTapData {
-    @Ignore
-    Objectify objectifyService = OfyService.ofy();
 
     public void save() {
-        objectifyService.save().entity(this).now();
+        ofy().save().entity(this).now();
     }
 
     public void remove() {
-        objectifyService.delete().entity(this).now();
+        ofy().delete().entity(this).now();
     }
 }

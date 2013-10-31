@@ -34,7 +34,7 @@ public class SendAllMessagesServlet extends BaseServlet {
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
       throws IOException, ServletException {
-    List<Device> devices = DatastoreHelper.getDevices();
+    List<Device> devices = Device.getAll();
     String status;
     if (devices.isEmpty()) {
       status = "Message ignored as there is no device registered!";
@@ -82,7 +82,7 @@ public class SendAllMessagesServlet extends BaseServlet {
             total + " devices";
       }
     }
-    req.setAttribute(HomeServlet.ATTRIBUTE_STATUS, status.toString());
+    req.setAttribute(HomeServlet.ATTRIBUTE_STATUS, status);
     getServletContext().getRequestDispatcher("/home").forward(req, resp);
   }
 

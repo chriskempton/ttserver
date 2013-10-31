@@ -2,7 +2,6 @@ package com.mynameistodd.tappytap.server.api.messaging;
 
 import com.google.android.gcm.server.*;
 import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
-import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 
@@ -44,7 +43,8 @@ public class GcmMessageService implements IMessageService {
             if (canonicalRegId != null) {
                 // same device has more than one registration id: update it
                 logger.finest("canonicalRegId " + canonicalRegId);
-                DatastoreHelper.updateRegistration(messageSend.getRecipientID(), canonicalRegId);
+                Device recipientDevice = Device.findById(messageSend.getRecipientID());
+                recipientDevice.updateRegistration(canonicalRegId);
             }
         } else {
             String error = result.getErrorCodeName();
@@ -78,7 +78,6 @@ public class GcmMessageService implements IMessageService {
             logger.log(Level.SEVERE, "Exception posting " + message, e);
             throw e;
         }
-        boolean allDone = true;
         // check if any registration id must be updated
         if (multicastResult.getCanonicalIds() != 0) {
             List<Result> results = multicastResult.getResults();
@@ -86,7 +85,8 @@ public class GcmMessageService implements IMessageService {
                 String canonicalRegId = results.get(i).getCanonicalRegistrationId();
                 if (canonicalRegId != null) {
                     String regId = regIds.get(i);
-                    DatastoreHelper.updateRegistration(regId, canonicalRegId);
+                    Device recipientDevice = Device.findById(regId);
+                    recipientDevice.updateRegistration(canonicalRegId);
                 }
             }
         }
