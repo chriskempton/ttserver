@@ -4,7 +4,7 @@ import com.googlecode.objectify.Objectify;
 import com.googlecode.objectify.ObjectifyService;
 import com.googlecode.objectify.ObjectifyFactory;
 import com.mynameistodd.tappytap.server.data.Device;
-import com.mynameistodd.tappytap.server.data.Message;
+import com.mynameistodd.tappytap.server.data.User;
 
 /**
  * User: ckempton
@@ -13,6 +13,7 @@ import com.mynameistodd.tappytap.server.data.Message;
 public class OfyService {
     static {
         factory().register(Device.class);
+        factory().register(User.class);
     }
 
     public static Objectify ofy() {
