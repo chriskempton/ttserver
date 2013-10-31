@@ -12,14 +12,13 @@ import com.googlecode.objectify.annotation.Id;
 public class User extends TappyTapData {
     
 	@Id
-	Long id;
-	String userId;
+	String email;
 
-    public String getUserID() {
-        return userId;
+    public String getEmail() {
+        return email;
     }
 
-    public void setUserID(String userID) {
-        this.userId = userID;
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
