@@ -2,26 +2,25 @@ package com.mynameistodd.tappytap.server.data;
 
 import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
+import com.googlecode.objectify.annotation.Index;
+import com.googlecode.objectify.annotation.Load;
+import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
+import com.googlecode.objectify.Ref;
+
+import java.util.List;
 
 /**
  * Created by ckempton on 10/23/13.
  * A Device is a Message destination associated with a User.
  */
 @Entity
-public class Device {
+public class Device extends TappyTapData {
     
 	@Id
-	Long id;
-	String userId;
-	String deviceId;
-
-    public String getUserID() {
-        return userId;
-    }
-
-    public void setUserID(String userID) {
-        this.userId = userID;
-    }
+    String deviceId;
+    @Index
+    @Load
+    Ref<User> user;
 
 	public String getDeviceId() {
 		return deviceId;
@@ -31,12 +30,53 @@ public class Device {
 		this.deviceId = deviceId;
 	}
 
-	public void save() {
-		DatastoreHelper.register(deviceId, userId);
+    public User getUser() {
+        return user.getValue();
+    }
+
+    public void setUser(User user) {
+        this.user = Ref.create(user);
+    }
+
+    @Override
+    public void remove() {
+        for (Enrollment enrollment:getEnrollments()) {
+            enrollment.remove();
+        }
+        ofy().delete().entity(this);
 	}
 
-	public void remove() {
-		DatastoreHelper.unenrollDevice(deviceId);
-		DatastoreHelper.unregister(deviceId);
-	}
+    public List<Enrollment> getEnrollments() {
+        return ofy().load().type(Enrollment.class).filter("recipient", Device.findById(this.deviceId)).list();
+    }
+
+    /**
+     * Updates the registration id of the device.
+     */
+    public void updateRegistration(String newId) {
+        this.remove();
+        this.setDeviceId(newId);
+        this.save();
+    }
+
+    /**
+     * Gets a device by Id.
+     */
+    public static Device findById(String deviceId) {
+        return ofy().load().type(Device.class).id(deviceId).now();
+    }
+
+    /**
+     * Gets all registered devices.
+     */
+    public static List<Device> getAll() {
+        return ofy().load().type(Device.class).list();
+    }
+
+    /**
+     * Gets the number of total devices.
+     */
+    public static int getTotalCount() {
+        return getAll().size();
+    }
 }

@@ -34,17 +34,17 @@ public class RegisterServlet extends BaseServlet {
     String senderId = getParameter(req, PARAMETER_SENDER_ID);
 
     User theUser = new User();
-    theUser.setUserID(userId);
+    theUser.setEmail(userId);
     theUser.save();
     
     Device theDevice = new Device();
     theDevice.setDeviceId(deviceId);
-    theDevice.setUserID(userId);
+    theDevice.setUser(theUser);
     theDevice.save();
     
     Enrollment theEnrollment = new Enrollment();
-    theEnrollment.setRecipientID(deviceId);
-    theEnrollment.setSenderID(senderId);
+    theEnrollment.setRecipient(Device.findById(deviceId));
+    theEnrollment.setSender(User.findByEmail(senderId));
     theEnrollment.save();
     
     setSuccess(resp);
