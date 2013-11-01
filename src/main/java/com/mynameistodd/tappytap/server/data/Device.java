@@ -4,7 +4,6 @@ import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
 import com.googlecode.objectify.annotation.Index;
 import com.googlecode.objectify.annotation.Load;
-import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
 import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
 import com.googlecode.objectify.Ref;
 
@@ -41,9 +40,15 @@ public class Device extends TappyTapData {
 
     @Override
     public void remove() {
-		DatastoreHelper.unenrollDevice(deviceId);
+        for (Enrollment enrollment:getEnrollments()) {
+            enrollment.remove();
+        }
         ofy().delete().entity(this);
 	}
+
+    public List<Enrollment> getEnrollments() {
+        return ofy().load().type(Enrollment.class).filter("recipient", Device.findById(this.deviceId)).list();
+    }
 
     /**
      * Updates the registration id of the device.

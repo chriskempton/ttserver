@@ -4,18 +4,13 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
-import com.mynameistodd.tappytap.server.data.Enrollment;
-import com.mynameistodd.tappytap.server.data.Device;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
-
-import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
 
 /**
  * Simple implementation of a data store using standard Java collections.
@@ -23,44 +18,20 @@ import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
  * This class is neither persistent (it will lost the data when the app is
  * restarted) nor thread safe.
  */
-public final class DatastoreHelper {
+public final class MulticastDatastoreHelper {
 
   public static final int MULTICAST_SIZE = 1000;
 
   private static final String MULTICAST_TYPE = "Multicast";
   private static final String MULTICAST_REG_IDS_PROPERTY = "regIds";
 
-  private static final FetchOptions DEFAULT_FETCH_OPTIONS = FetchOptions.Builder
-      .withPrefetchSize(MULTICAST_SIZE).chunkSize(MULTICAST_SIZE);
-
   private static final Logger logger =
-      Logger.getLogger(DatastoreHelper.class.getName());
+      Logger.getLogger(MulticastDatastoreHelper.class.getName());
   private static final DatastoreService datastore =
       DatastoreServiceFactory.getDatastoreService();
 
-  private DatastoreHelper() {
+  private MulticastDatastoreHelper() {
     throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Unenrolls a device from all senders.
-   *
-   * @param regId device's registration id.
-   */
-  public static void unenrollDevice(String regId) {
-    logger.info("Unenrolling " + regId + " from all senders");
-    List<Enrollment> entities = findEnrollmentsByRegId(regId);
-    if (entities == null || entities.size() == 0) {
-        logger.warning("Device " + regId + " already unenrolled");
-    } else {
-        for (Enrollment entity:entities) {
-            entity.remove();
-        }
-    }
-  }
-
-  private static List<Enrollment> findEnrollmentsByRegId(String regId) {
-    return ofy().load().type(Enrollment.class).filter("sender", Device.findById(regId)).list();
   }
 
   /**

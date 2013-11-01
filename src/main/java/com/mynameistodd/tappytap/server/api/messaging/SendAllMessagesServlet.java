@@ -8,7 +8,7 @@ import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.taskqueue.TaskOptions.Method;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.User;
-import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.util.MulticastDatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.webclient.HomeServlet;
@@ -72,8 +72,8 @@ public class SendAllMessagesServlet extends BaseServlet {
           counter++;
           partialDevices.add(device.getDeviceId());
           int partialSize = partialDevices.size();
-          if (partialSize == DatastoreHelper.MULTICAST_SIZE || counter == total) {
-            String multicastKey = DatastoreHelper.createMulticast(partialDevices);
+          if (partialSize == MulticastDatastoreHelper.MULTICAST_SIZE || counter == total) {
+            String multicastKey = MulticastDatastoreHelper.createMulticast(partialDevices);
             logger.fine("Queuing " + partialSize + " devices on multicast " +
                 multicastKey);
             TaskOptions taskOptions = TaskOptions.Builder

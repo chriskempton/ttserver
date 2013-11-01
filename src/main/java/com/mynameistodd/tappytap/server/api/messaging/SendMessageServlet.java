@@ -3,7 +3,7 @@ package com.mynameistodd.tappytap.server.api.messaging;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.User;
-import com.mynameistodd.tappytap.server.data.util.DatastoreHelper;
+import com.mynameistodd.tappytap.server.data.util.MulticastDatastoreHelper;
 import com.mynameistodd.tappytap.server.data.Message;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 
@@ -106,7 +106,7 @@ public class SendMessageServlet extends BaseServlet {
 
   private void sendMulticastMessage(String multicastKey, String senderId, Message message, HttpServletResponse resp) {
     // Recover registration ids from datastore
-    List<String> regIds = DatastoreHelper.getMulticast(multicastKey);
+    List<String> regIds = MulticastDatastoreHelper.getMulticast(multicastKey);
     List<MessageSend> messageSends = new ArrayList<MessageSend>();
     for(String regId:regIds) {
         MessageSend messageSend = new MessageSend();
@@ -132,7 +132,7 @@ public class SendMessageServlet extends BaseServlet {
   }
 
   private void multicastDone(HttpServletResponse resp, String encodedKey) {
-    DatastoreHelper.deleteMulticast(encodedKey);
+    MulticastDatastoreHelper.deleteMulticast(encodedKey);
     taskDone(resp);
   }
 
