@@ -7,7 +7,6 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.googlecode.objectify.ObjectifyService;
-import com.mynameistodd.tappytap.server.data.Message;
 
 import java.io.FileInputStream;
 import java.util.logging.Logger;
@@ -28,9 +27,7 @@ public class ApiKeyInitializer implements ServletContextListener {
   private final Logger logger = Logger.getLogger(getClass().getName());
 
   public void contextInitialized(ServletContextEvent event) {
-	  //register classes for objectify
-	  ObjectifyService.register(Message.class);
-	  
+
     DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
     Key key = KeyFactory.createKey(ENTITY_KIND, ENTITY_KEY);
 

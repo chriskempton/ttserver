@@ -8,24 +8,24 @@ import com.googlecode.objectify.annotation.Load;
 
 /**
  * Created by ckempton on 9/7/13.
- * A Message is a text that a User has sent.  It can be reused.
+ * A TappyTapMessage is a text that a User has sent.  It can be reused.
  */
 @Entity
-public class Message extends TappyTapData {
+public class TappyTapMessage extends TappyTapData {
 	
 	@Id
 	Long id;
-	String message;
+	String messageText;
     @Index
     @Load
     Ref<User> sender;
 
-    public String getMessage() {
-        return message;
+    public String getMessageText() {
+        return messageText;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setMessageText(String messageText) {
+        this.messageText = messageText;
     }
 
     public User getSender() {

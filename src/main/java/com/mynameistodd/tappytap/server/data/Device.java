@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * Created by ckempton on 10/23/13.
- * A Device is a Message destination associated with a User.
+ * A Device is a TappyTapMessage destination associated with a User.
  */
 @Entity
 public class Device extends TappyTapData {

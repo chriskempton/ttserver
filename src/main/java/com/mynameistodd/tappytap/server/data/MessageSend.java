@@ -8,7 +8,7 @@ import com.googlecode.objectify.annotation.Load;
 
 /**
  * Created by ckempton on 9/7/13.
- * A MessageSend is an individual instance of a Message being sent to a recipient
+ * A MessageSend is an individual instance of a TappyTapMessage being sent to a recipient
  */
 @Entity
 public class MessageSend extends TappyTapData {
@@ -17,7 +17,7 @@ public class MessageSend extends TappyTapData {
     Long id;
     @Index
     @Load
-    Ref<Message> message;
+    Ref<TappyTapMessage> tappyTapMessage;
     @Index
     @Load
     Ref<Device> recipient;
@@ -25,12 +25,12 @@ public class MessageSend extends TappyTapData {
     @Load
     Ref<User> sender;
 
-    public Message getMessage() {
-        return message.getValue();
+    public TappyTapMessage getTappyTapMessage() {
+        return tappyTapMessage.getValue();
     }
 
-    public void setMessage(Message message) {
-        this.message = Ref.create(message);
+    public void setTappyTapMessage(TappyTapMessage tappyTapMessage) {
+        this.tappyTapMessage = Ref.create(tappyTapMessage);
     }
 
     public Device getRecipient() {

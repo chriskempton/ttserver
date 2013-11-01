@@ -6,7 +6,7 @@ import com.googlecode.objectify.ObjectifyFactory;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.User;
 import com.mynameistodd.tappytap.server.data.Enrollment;
-import com.mynameistodd.tappytap.server.data.Message;
+import com.mynameistodd.tappytap.server.data.TappyTapMessage;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 
 /**
@@ -18,7 +18,7 @@ public class OfyService {
         factory().register(Device.class);
         factory().register(User.class);
         factory().register(Enrollment.class);
-        factory().register(Message.class);
+        factory().register(TappyTapMessage.class);
         factory().register(MessageSend.class);
     }
 

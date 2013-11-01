@@ -4,7 +4,7 @@ import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.User;
 import com.mynameistodd.tappytap.server.data.util.MulticastDatastoreHelper;
-import com.mynameistodd.tappytap.server.data.Message;
+import com.mynameistodd.tappytap.server.data.TappyTapMessage;
 import com.mynameistodd.tappytap.server.data.MessageSend;
 
 import java.io.IOException;
@@ -74,13 +74,13 @@ public class SendMessageServlet extends BaseServlet {
     String message = req.getParameter(PARAMETER_MESSAGE);
     String sender = req.getParameter(PARAMETER_SENDER);
     String regId = req.getParameter(PARAMETER_DEVICE);
-    Message theMessage = new Message();
-    theMessage.setMessage(message);
-    theMessage.setSender(User.findByEmail(sender));
-    theMessage.save();
+    TappyTapMessage theTappyTapMessage = new TappyTapMessage();
+    theTappyTapMessage.setMessageText(message);
+    theTappyTapMessage.setSender(User.findByEmail(sender));
+    theTappyTapMessage.save();
 
     MessageSend messageSend = new MessageSend();
-    messageSend.setMessage(theMessage);
+    messageSend.setTappyTapMessage(theTappyTapMessage);
     messageSend.setRecipient(Device.findById(regId));
     messageSend.setSender(User.findByEmail(sender));
     if (regId != null) {
@@ -96,7 +96,7 @@ public class SendMessageServlet extends BaseServlet {
     }
     String multicastKey = req.getParameter(PARAMETER_MULTICAST);
     if (multicastKey != null) {
-      sendMulticastMessage(multicastKey, sender, theMessage, resp);
+      sendMulticastMessage(multicastKey, sender, theTappyTapMessage, resp);
       return;
     }
     logger.severe("Invalid request!");
@@ -104,13 +104,13 @@ public class SendMessageServlet extends BaseServlet {
     return;
   }
 
-  private void sendMulticastMessage(String multicastKey, String senderId, Message message, HttpServletResponse resp) {
+  private void sendMulticastMessage(String multicastKey, String senderId, TappyTapMessage tappyTapMessage, HttpServletResponse resp) {
     // Recover registration ids from datastore
     List<String> regIds = MulticastDatastoreHelper.getMulticast(multicastKey);
     List<MessageSend> messageSends = new ArrayList<MessageSend>();
     for(String regId:regIds) {
         MessageSend messageSend = new MessageSend();
-        messageSend.setMessage(message);
+        messageSend.setTappyTapMessage(tappyTapMessage);
         messageSend.setSender(User.findByEmail(senderId));
         messageSend.setRecipient(Device.findById(regId));
         messageSends.add(messageSend);

@@ -4,6 +4,7 @@ import com.google.android.gcm.server.*;
 import com.mynameistodd.tappytap.server.api.ApiKeyInitializer;
 import com.mynameistodd.tappytap.server.data.Device;
 import com.mynameistodd.tappytap.server.data.MessageSend;
+import com.mynameistodd.tappytap.server.data.TappyTapMessage;
 import com.mynameistodd.tappytap.server.data.User;
 
 import javax.servlet.ServletConfig;
@@ -26,7 +27,7 @@ public class GcmMessageService implements IMessageService {
     @Override
     public void send(MessageSend messageSend) throws IOException {
         logger.info("Sending message to device " + messageSend.getRecipient().getDeviceId());
-        Message message = createMessage(messageSend.getMessage().getMessage());
+        Message message = createMessage(messageSend.getTappyTapMessage().getMessageText());
         Result result;
         try {
             result = sender.sendNoRetry(message, messageSend.getRecipient().getDeviceId());
@@ -64,14 +65,14 @@ public class GcmMessageService implements IMessageService {
     @Override
     public List<MessageSend> sendMulticastReturnRetries(List<MessageSend> messageSends) throws IOException {
         List<String> regIds = new ArrayList<>();
-        com.mynameistodd.tappytap.server.data.Message theMessage = null;
+        TappyTapMessage tappyTapMessage = null;
         String senderId = null;
         for(MessageSend messageSend:messageSends){
             regIds.add(messageSend.getRecipient().getDeviceId());
-            theMessage = messageSend.getMessage();
+            tappyTapMessage = messageSend.getTappyTapMessage();
             senderId = messageSend.getSender().getEmail();
         }
-        Message message = createMessage(theMessage.getMessage());
+        Message message = createMessage(tappyTapMessage.getMessageText());
         MulticastResult multicastResult;
         try {
             multicastResult = sender.sendNoRetry(message, regIds);
@@ -107,7 +108,7 @@ public class GcmMessageService implements IMessageService {
                     }
                     if (error.equals(Constants.ERROR_UNAVAILABLE)) {
                         MessageSend messageSend = new MessageSend();
-                        messageSend.setMessage(theMessage);
+                        messageSend.setTappyTapMessage(tappyTapMessage);
                         messageSend.setRecipient(Device.findById(regId));
                         messageSend.setSender(User.findByEmail(senderId));
                         retriableMessageSends.add(messageSend);
