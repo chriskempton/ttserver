@@ -31,6 +31,7 @@ public class OfyServiceTest {
     }
 
     public static final String deviceId = "uwyfgwuicnhqw9eu34";
+    public static final String deviceId2 = "uwyfgwuicsadasdasdnhqw9eu34";
     public static final String email = "chriskempton97@gmail.com";
     public static final String email2 = "todd.deland@gmail.com";
 
@@ -44,6 +45,11 @@ public class OfyServiceTest {
         theDevice.setDeviceId(deviceId);
         theDevice.setUser(theUser);
         theDevice.save();
+
+        Device theDevice2 = new Device();
+        theDevice2.setDeviceId(deviceId2);
+        theDevice2.setUser(theUser);
+        theDevice2.save();
 
         User theSender = new User();
         theSender.setEmail(email2);
@@ -87,15 +93,15 @@ public class OfyServiceTest {
                 System.out.println("Output is null!");
             }
         }
-        assertTrue(devices.size() > 0);
+        assertTrue(devices.size() == 2);
     }
 
     @Test
     public void getEnrollmentsByDeviceId() {
         System.out.println();
-        System.out.println("Selecting all Enrollments for the device");
+        System.out.println("Selecting all Enrollments for the device " + deviceId);
         System.out.println("-------------------------");
-        List<Enrollment> enrollments = ofy().load().type(Enrollment.class).filter("sender", User.findByEmail(email2)).list();
+        List<Enrollment> enrollments = ofy().load().type(Enrollment.class).filter("recipient", Device.findById(deviceId)).list();
         for(Enrollment enrollment:enrollments) {
             if(enrollment != null){
                 System.out.println("Output Device Id: " + enrollment.getRecipient().getDeviceId());
@@ -104,6 +110,11 @@ public class OfyServiceTest {
                 System.out.println("Output is null!");
             }
         }
-        assertTrue(enrollments.size() > 0);
+        assertTrue(enrollments.size() == 1);
+        System.out.println();
+        System.out.println("Selecting all Enrollments for the device " + deviceId2);
+        System.out.println("-------------------------");
+        List<Enrollment> enrollments2 = ofy().load().type(Enrollment.class).filter("recipient", Device.findById(deviceId2)).list();
+        assertTrue(enrollments2.size() == 0);
     }
 }
