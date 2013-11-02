@@ -1,9 +1,7 @@
 package com.mynameistodd.tappytap.server.data;
 
-import com.googlecode.objectify.annotation.Entity;
-import com.googlecode.objectify.annotation.Id;
-import com.googlecode.objectify.annotation.Index;
-import com.googlecode.objectify.annotation.Load;
+import com.googlecode.objectify.annotation.*;
+
 import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
 import com.googlecode.objectify.Ref;
 
@@ -14,6 +12,7 @@ import java.util.List;
  * A Device is a TappyTapMessage destination associated with a User.
  */
 @Entity
+@Embed
 public class Device extends TappyTapData {
     
 	@Id

@@ -1,11 +1,7 @@
 package com.mynameistodd.tappytap.server.api.messaging;
 
 import com.mynameistodd.tappytap.server.api.BaseServlet;
-import com.mynameistodd.tappytap.server.data.Device;
-import com.mynameistodd.tappytap.server.data.User;
-import com.mynameistodd.tappytap.server.data.util.MulticastDatastoreHelper;
-import com.mynameistodd.tappytap.server.data.TappyTapMessage;
-import com.mynameistodd.tappytap.server.data.MessageSend;
+import com.mynameistodd.tappytap.server.data.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -101,18 +97,17 @@ public class SendMessageServlet extends BaseServlet {
     }
     logger.severe("Invalid request!");
     taskDone(resp);
-    return;
   }
 
   private void sendMulticastMessage(String multicastKey, String senderId, TappyTapMessage tappyTapMessage, HttpServletResponse resp) {
     // Recover registration ids from datastore
-    List<String> regIds = MulticastDatastoreHelper.getMulticast(multicastKey);
-    List<MessageSend> messageSends = new ArrayList<MessageSend>();
-    for(String regId:regIds) {
+    List<Device> recipientDevices = MulticastMessage.findById(multicastKey).getRecipientDevices();
+    List<MessageSend> messageSends = new ArrayList<>();
+    for(Device device:recipientDevices) {
         MessageSend messageSend = new MessageSend();
         messageSend.setTappyTapMessage(tappyTapMessage);
         messageSend.setSender(User.findByEmail(senderId));
-        messageSend.setRecipient(Device.findById(regId));
+        messageSend.setRecipient(device);
         messageSends.add(messageSend);
     }
     List<MessageSend> messageSendsOutput = null;
@@ -121,7 +116,6 @@ public class SendMessageServlet extends BaseServlet {
       messageSendsOutput = messageService.sendMulticastReturnRetries(messageSends);
     } catch (IOException e) {
       multicastDone(resp, multicastKey);
-      return;
     } finally {
         if (messageSendsOutput == null || messageSendsOutput.size() == 0) {
           multicastDone(resp, multicastKey);
@@ -132,7 +126,7 @@ public class SendMessageServlet extends BaseServlet {
   }
 
   private void multicastDone(HttpServletResponse resp, String encodedKey) {
-    MulticastDatastoreHelper.deleteMulticast(encodedKey);
+    MulticastMessage.findById(encodedKey).remove();
     taskDone(resp);
   }
 

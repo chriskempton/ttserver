@@ -7,15 +7,13 @@ import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.taskqueue.TaskOptions.Method;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
-import com.mynameistodd.tappytap.server.data.User;
-import com.mynameistodd.tappytap.server.data.util.MulticastDatastoreHelper;
-import com.mynameistodd.tappytap.server.data.TappyTapMessage;
-import com.mynameistodd.tappytap.server.data.Device;
+import com.mynameistodd.tappytap.server.data.*;
 import com.mynameistodd.tappytap.webclient.HomeServlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,47 +36,53 @@ public class SendAllMessagesServlet extends BaseServlet {
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
       throws IOException, ServletException {
-    List<Device> devices = Device.getAll();
+
+    User sender = User.findByEmail(req.getParameter(PARAMETER_SENDER));
+    List<Enrollment> enrollees = sender.getEnrollees();
     String status;
-    if (devices.isEmpty()) {
+    if (enrollees.isEmpty()) {
       status = "Message ignored as there is no device registered!";
     } else {
     	
       String messageText = req.getParameter(PARAMETER_MESSAGE);
-      String sender = req.getParameter(PARAMETER_SENDER);
 
       TappyTapMessage msg = new TappyTapMessage();
       msg.setMessageText(messageText);
-      msg.setSender(User.findByEmail(sender));
+      msg.setSender(sender);
       msg.save();
     	
       Queue queue = QueueFactory.getQueue("gcm");
       // NOTE: check below is for demonstration purposes; a real application
       // could always send a multicast, even for just one recipient
-      if (devices.size() == 1) {
+      if (enrollees.size() == 1) {
         // send a single message using plain post
-        String device = devices.get(0).getDeviceId();
+        String device = enrollees.get(0).getRecipient().getDeviceId();
         queue.add(withUrl("/send").param(
             SendMessageServlet.PARAMETER_DEVICE, device).param(SendMessageServlet.PARAMETER_MESSAGE, messageText));
         status = "Single message queued for registration id " + device;
       } else {
         // send a multicast message using JSON
         // must split in chunks of 1000 devices (GCM limit)
-        int total = devices.size();
-        List<String> partialDevices = new ArrayList<>(total);
+        int total = enrollees.size();
+        List<Device> partialDevices = new ArrayList<>(total);
         int counter = 0;
         int tasks = 0;
-        for (Device device:devices) {
+        for (Enrollment enrollment:enrollees) {
           counter++;
-          partialDevices.add(device.getDeviceId());
+          partialDevices.add(enrollment.getRecipient());
           int partialSize = partialDevices.size();
-          if (partialSize == MulticastDatastoreHelper.MULTICAST_SIZE || counter == total) {
-            String multicastKey = MulticastDatastoreHelper.createMulticast(partialDevices);
-            logger.fine("Queuing " + partialSize + " devices on multicast " +
-                multicastKey);
-            TaskOptions taskOptions = TaskOptions.Builder
+          if (partialSize == 1000 || counter == total) {
+              MulticastMessage multicastMessage = new MulticastMessage();
+              multicastMessage.setSender(sender);
+              multicastMessage.setRecipientDevices(partialDevices);
+              multicastMessage.setTappyTapMessage(msg);
+              multicastMessage.setMulticastIdentifier(UUID.randomUUID().toString());
+              multicastMessage.save();
+              logger.fine("Queuing " + partialSize + " devices on multicast " +
+                multicastMessage.getMulticastIdentifier());
+              TaskOptions taskOptions = TaskOptions.Builder
                 .withUrl("/send")
-                .param(SendMessageServlet.PARAMETER_MULTICAST, multicastKey)
+                .param(SendMessageServlet.PARAMETER_MULTICAST, multicastMessage.getMulticastIdentifier())
                 .method(Method.POST);
             queue.add(taskOptions);
             partialDevices.clear();

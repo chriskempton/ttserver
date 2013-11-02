@@ -3,6 +3,8 @@ package com.mynameistodd.tappytap.server.data;
 import com.googlecode.objectify.annotation.Entity;
 import com.googlecode.objectify.annotation.Id;
 
+import java.util.List;
+
 import static com.mynameistodd.tappytap.server.data.util.OfyService.ofy;
 
 /**
@@ -29,5 +31,13 @@ public class User extends TappyTapData {
      */
     public static User findByEmail(String email) {
         return ofy().load().type(User.class).id(email).now();
+    }
+
+    public List<Device> getDevices() {
+        return ofy().load().type(Device.class).filter("user", this).list();
+    }
+
+    public List<Enrollment> getEnrollees() {
+        return ofy().load().type(Enrollment.class).filter("sender", this).list();
     }
 }

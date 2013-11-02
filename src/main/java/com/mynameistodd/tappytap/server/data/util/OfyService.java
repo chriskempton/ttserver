@@ -8,6 +8,7 @@ import com.mynameistodd.tappytap.server.data.User;
 import com.mynameistodd.tappytap.server.data.Enrollment;
 import com.mynameistodd.tappytap.server.data.TappyTapMessage;
 import com.mynameistodd.tappytap.server.data.MessageSend;
+import com.mynameistodd.tappytap.server.data.MulticastMessage;
 
 /**
  * User: ckempton
@@ -20,6 +21,7 @@ public class OfyService {
         factory().register(Enrollment.class);
         factory().register(TappyTapMessage.class);
         factory().register(MessageSend.class);
+        factory().register(MulticastMessage.class);
     }
 
     public static Objectify ofy() {
