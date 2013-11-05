@@ -33,6 +33,10 @@ public class RegisterServlet extends BaseServlet {
     String userId = getParameter(req, PARAMETER_USER_ID);
     String senderId = getParameter(req, PARAMETER_SENDER_ID);
 
+    User theSenderUser = new User();
+    theSenderUser.setEmail(senderId);
+    theSenderUser.save();
+
     User theUser = new User();
     theUser.setEmail(userId);
     theUser.save();
