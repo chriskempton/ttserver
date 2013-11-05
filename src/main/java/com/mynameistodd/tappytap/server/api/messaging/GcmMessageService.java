@@ -40,7 +40,7 @@ public class GcmMessageService implements IMessageService {
         }
         if (result.getMessageId() != null) {
             messageSend.save();
-            logger.info("Succesfully sent message to device " + messageSend.getRecipient().getDeviceId());
+            logger.info("Successfully sent message to device " + messageSend.getRecipient().getDeviceId());
             String canonicalRegId = result.getCanonicalRegistrationId();
             if (canonicalRegId != null) {
                 // same device has more than one registration id: update it
