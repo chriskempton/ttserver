@@ -4,29 +4,20 @@ import com.google.android.gcm.server.Message;
 import com.google.android.gcm.server.MockResult;
 import com.google.android.gcm.server.Result;
 import com.google.android.gcm.server.Sender;
-import com.google.android.gcm.server.Message.Builder;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.mynameistodd.tappytap.server.data.*;
-import org.json.simple.parser.JSONParser;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.contains;
 import static org.powermock.api.mockito.PowerMockito.*;
 
 import org.junit.*;
-import org.junit.runner.RunWith;
-import org.mockito.Spy;
+import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 
-import java.io.ByteArrayOutputStream;
-import java.net.HttpURLConnection;
-import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * User: ckempton
@@ -40,17 +31,10 @@ public class GcmMessageServiceTest {
     public static final String chrisEmail = "chriskempton97@gmail.com";
     public static final String toddEmail = "todd.deland@gmail.com";
     public static final String messageText = "Tappy Tap Test message";
-    private final Message message =
-            new Message.Builder()
-                    .addData("k1", messageText)
-                    .build();
 
     private Sender sender;
+    private Logger logger;
     private GcmMessageService gcmMessageService = new GcmMessageService();
-
-    private HttpURLConnection mockedConn;
-    private final ByteArrayOutputStream outputStream =
-            new ByteArrayOutputStream();
     private Result result;
     private static final LocalServiceTestHelper helper =
             new LocalServiceTestHelper(new LocalDatastoreServiceTestConfig());
@@ -68,7 +52,9 @@ public class GcmMessageServiceTest {
     @Before
     public void setUp() throws Exception {
         sender = mock(Sender.class);
+        logger = mock(Logger.class);
         Whitebox.setInternalState(gcmMessageService, "sender", sender);
+        Whitebox.setInternalState(gcmMessageService, "logger", logger);
         result = MockResult.getMockResult();
         doReturn(result).when(sender).sendNoRetry((Message) anyObject(), anyString());
     }
@@ -104,6 +90,7 @@ public class GcmMessageServiceTest {
         messageSend.save();
 
         gcmMessageService.send(messageSend);
+        Mockito.verify(logger).info(contains("Success"));
     }
 
     @Test
