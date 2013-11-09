@@ -8,9 +8,9 @@ import com.google.appengine.api.taskqueue.TaskOptions;
 import com.google.appengine.api.taskqueue.TaskOptions.Method;
 import com.mynameistodd.tappytap.server.api.BaseServlet;
 import com.mynameistodd.tappytap.server.data.*;
-import com.mynameistodd.tappytap.webclient.HomeServlet;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -93,8 +93,8 @@ public class SendAllMessagesServlet extends BaseServlet {
             total + " devices";
       }
     }
-    req.setAttribute(HomeServlet.ATTRIBUTE_STATUS, status);
-    getServletContext().getRequestDispatcher("/home").forward(req, resp);
+      PrintWriter out = resp.getWriter();
+      out.print(status);
   }
 
 }
